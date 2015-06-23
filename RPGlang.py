@@ -99,30 +99,31 @@ def parsecase(con): #Con is for construct
     r = {}
     while i < len(con):
         if con[i] == 'CASE':
-            key = con[i+1]
+            key = con[i+1].strip('"')
             i += 2
             val = []
             while not con[i] == 'CASE' and not con[i] == 'ELSE' and not i == len(con):
-                val += [con[i]]
+                val += [con[i].strip('"')]
                 i += 1
             r[key] = val
                 
         elif con[i] == 'ELSE':
-            key = '*'
+            key = r'\*'
             i += 1
             val = []
             while not i == len(con):
-                val += [con[i]]
+                val += [con[i].strip('"')]
                 i += 1
             r[key] = val
     return r
     
 def findcase(val, cases):
-    if cases.get(val):
-        return cases[val]
-    elif cases.get('*'):
-        return cases['*']
-    return None
+    for x in cases:
+        if re.match(x, val):
+            return cases[x]
+            break
+    else:
+        return cases[r'\*']
 
 def run(script):
     env = {'ELSE': True}
@@ -138,21 +139,21 @@ def run(script):
         while i < len(line) and linedone != True:
             if line[i] == 'PRINT': #Printing stuff
                 if isliteral(line[i+1]): #Use variables
-                    print(line[i+1].strip('"'), end='')
+                    print(line[i+1].strip('"'))#, end='')
                 else:
-                    print(env[line[i+1]], end='')
+                    print(env[line[i+1]].strip('"'))#, end='')
                 i+=2
 
             elif line[i] == 'DIATOF': #Dialogue from files
                 if isliteral(line[i+1]): #Use variables
-                    diatof(line[i+1].strip('"'), end='')
+                    diatof(line[i+1].strip('"'))
                 else:
                     diatof(env[line[i+1]], end='')
                 i+=2
                 
             elif line[i] == 'ASK': #Get input and store it in INPUT variable
                 inp = raw_input()
-                if settings['CASESENSITITIVE']:
+                if settings['CASESENSITIVE']:
                     env['INPUT'] = inp
                 else:
                     env['INPUT'] = inp.upper()
@@ -178,11 +179,14 @@ def run(script):
                 else:
                     linenum = int(env[line[i+1]])
                     linedone = True
+            elif line[i] == 'CONTINUE':
+                linenum+=1
+                linedone = True
 
             elif line[i] == 'END': #Terminate the Script
                 linedone = True
                 ended = True
 
 if __name__ == '__main__':
-    run(raw_input())
+    run(open(raw_input()).read())
     raw_input()
