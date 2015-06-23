@@ -1,7 +1,19 @@
 from __future__ import print_function
+from time import sleep
 import re
 import sys
+try:
+    usesound = True
+    import pyglet
+except ImportError:
+    usesound = False
+    print('You don\'t have Pyglet installed! This program will still work, but sounds won\'t work!')
 
+settings = {
+    'CASESENSITIVE':True,
+    'SWITCHREGEX':False
+    }
+    
 def isliteral(s):
     if re.match(r'[0-9]+', s) or s[0] == '"' and s[-1] == '"':
         return True
@@ -61,6 +73,27 @@ def lexline(line):
         #print(r)
     return r
 
+def diatof(f):
+    text = open(f).read()
+    for line in text.split('\n'):
+        if line[0] == '/':
+            com = line.split()[0][1:].lower()
+            line = line.split()[1:]
+            if com == 'wait':
+                time.sleep(float(line[0]))
+            elif com == 'playsound':
+                print('Playsound command Not Yet Supported!')
+                print(line[1:])
+            elif com == '':
+                pass
+                
+            
+        else:
+            if line[0] == '\\':
+                print(line[1:])
+            else:
+                print(line)
+
 def parsecase(con): #Con is for construct
     i = 0
     r = {}
@@ -109,15 +142,29 @@ def run(script):
                 else:
                     print(env[line[i+1]], end='')
                 i+=2
+
+            elif line[i] == 'DIATOF': #Dialogue from files
+                if isliteral(line[i+1]): #Use variables
+                    diatof(line[i+1].strip('"'), end='')
+                else:
+                    diatof(env[line[i+1]], end='')
+                i+=2
                 
-            elif line[i] == 'ASK':
-                env['INPUT'] = raw_input()
+            elif line[i] == 'ASK': #Get input and store it in INPUT variable
+                inp = raw_input()
+                if settings['CASESENSITITIVE']:
+                    env['INPUT'] = inp
+                else:
+                    env['INPUT'] = inp.upper()
+
                 i+=1
                 
             elif line[i] == 'SWITCH':
                 switchvar = line[i+1]
                 if not isliteral(switchvar): #Use variables
                     switchvar = env[switchvar]
+                
+                switchvar = switchvar.strip('"')
 
                 output = findcase(switchvar, parsecase(line[i+2:]))
 
@@ -134,7 +181,7 @@ def run(script):
 
             elif line[i] == 'END': #Terminate the Script
                 linedone = True
-                ended = True 
+                ended = True
 
 if __name__ == '__main__':
     run(raw_input())
